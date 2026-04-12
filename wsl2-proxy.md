@@ -4,7 +4,7 @@
 
 - Windows 上代理能用
 - WSL2 里访问外网不通
-- 直接设置 `http_proxy=http://172.x.x.x:7890` 还是超时
+- 直接设置 `http_proxy=http://172.30.x.x:7890` 还是超时
 
 这份文档主要适用于：
 
@@ -183,7 +183,78 @@ unset all_proxy
 source ~/.bashrc
 ```
 
-## 9. apt 和 git 的代理设置
+## 9. 用 alias 一键开关代理
+
+如果你不想每次手动输入 `export`，可以把下面这些别名加进 `~/.bashrc` 或 `~/.zshrc`：
+
+```bash
+alias proxy_on='export http_proxy=http://172.30.x.x:7891; export https_proxy=http://172.30.x.x:7891; unset all_proxy'
+alias proxy_off='unset http_proxy; unset https_proxy; unset all_proxy'
+alias proxy_status='echo "http_proxy=$http_proxy"; echo "https_proxy=$https_proxy"; echo "all_proxy=$all_proxy"'
+```
+
+重新加载配置：
+
+```bash
+source ~/.bashrc
+```
+
+如果你用的是 zsh：
+
+```bash
+source ~/.zshrc
+```
+
+### 开启代理
+
+```bash
+proxy_on
+```
+
+### 关闭代理
+
+```bash
+proxy_off
+```
+
+### 查看当前状态
+
+```bash
+proxy_status
+```
+
+## 10. 用函数版开关代理
+
+如果你希望后面更容易扩展，也可以不用 `alias`，改成 shell 函数：
+
+```bash
+proxy_on() {
+  export http_proxy=http://172.30.x.x:7891
+  export https_proxy=http://172.30.x.x:7891
+  unset all_proxy
+  echo "proxy on"
+}
+
+proxy_off() {
+  unset http_proxy
+  unset https_proxy
+  unset all_proxy
+  echo "proxy off"
+}
+
+proxy_status() {
+  echo "http_proxy=$http_proxy"
+  echo "https_proxy=$https_proxy"
+  echo "all_proxy=$all_proxy"
+}
+```
+
+对新手来说：
+
+- 想最省事，就用 `alias`
+- 想以后更容易加逻辑，就用函数
+
+## 11. apt 和 git 的代理设置
 
 ### apt
 
@@ -201,7 +272,7 @@ git config --global http.proxy "http://172.30.x.x:7891"
 git config --global https.proxy "http://172.30.x.x:7891"
 ```
 
-## 10. 这种方案有没有安全风险
+## 12. 这种方案有没有安全风险
 
 有风险，但如果配置得当，风险是可控的。
 
@@ -248,7 +319,7 @@ git config --global https.proxy "http://172.30.x.x:7891"
 - 不要监听 `0.0.0.0`
 - 不要把同样的做法用于数据库、SSH 代理、管理后台等敏感服务
 
-## 11. 更安全一点的做法
+## 13. 更安全一点的做法
 
 如果你担心防火墙规则太宽，可以改成更收敛的规则。
 
@@ -284,7 +355,7 @@ New-NetFirewallRule -DisplayName "WSL PortProxy 7891 Restricted" -Direction Inbo
 netsh interface portproxy add v4tov4 listenaddress=172.30.x.x listenport=7891 connectaddress=127.0.0.1 connectport=7890
 ```
 
-## 12. 不用时如何关闭
+## 14. 不用时如何关闭
 
 如果你只是临时使用，可以在不用时删掉规则。
 
@@ -308,7 +379,7 @@ netsh advfirewall firewall delete rule name="WSL PortProxy 7891"
 Remove-NetFirewallRule -DisplayName "WSL PortProxy 7891 Restricted"
 ```
 
-## 13. 常见排错命令
+## 15. 常见排错命令
 
 ### 查看 portproxy 规则
 
@@ -348,7 +419,7 @@ Start-Service iphlpsvc
 curl -I -v --proxy http://172.30.x.x:7891 --max-time 10 https://www.google.com
 ```
 
-## 14. 一句话总结
+## 16. 一句话总结
 
 在 Win10 的 WSL2 NAT 模式下，如果 WSL 不能直接访问 Windows 本机代理端口，那么最实用的方案就是：
 
