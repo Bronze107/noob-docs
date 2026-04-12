@@ -29,7 +29,7 @@
 推荐形态：
 
 ```text
-WSL -> 172.30.160.1:7891 -> Windows portproxy -> 127.0.0.1:7890
+WSL -> 172.30.x.x:7891 -> Windows portproxy -> 127.0.0.1:7890
 ```
 
 ## 2. 为什么直接连 7890 有时不行
@@ -37,14 +37,14 @@ WSL -> 172.30.160.1:7891 -> Windows portproxy -> 127.0.0.1:7890
 你可能已经试过这些：
 
 ```bash
-export http_proxy=http://172.30.160.1:7890
+export http_proxy=http://172.30.x.x:7890
 curl -I https://www.google.com
 ```
 
 或者：
 
 ```bash
-curl -I -v --proxy http://172.30.160.1:7890 --max-time 10 https://www.google.com
+curl -I -v --proxy http://172.30.x.x:7890 --max-time 10 https://www.google.com
 ```
 
 结果一直超时。
@@ -72,7 +72,7 @@ curl.exe -I -x http://127.0.0.1:7890 https://www.google.com --max-time 10
 在 Windows 中，WSL 虚拟网卡常见地址类似：
 
 ```text
-172.30.160.1
+172.30.x.x
 ```
 
 查看方法：
@@ -90,7 +90,7 @@ vEthernet (WSL)
 例如：
 
 ```text
-IPv4 地址: 172.30.160.1
+IPv4 地址: 172.30.x.x
 ```
 
 ## 5. 推荐方案：给 WSL 单独做端口转发
@@ -100,12 +100,12 @@ IPv4 地址: 172.30.160.1
 在 **管理员 PowerShell** 中执行：
 
 ```powershell
-netsh interface portproxy add v4tov4 listenaddress=172.30.160.1 listenport=7891 connectaddress=127.0.0.1 connectport=7890
+netsh interface portproxy add v4tov4 listenaddress=172.30.x.x listenport=7891 connectaddress=127.0.0.1 connectport=7890
 ```
 
 含义：
 
-- 监听 `172.30.160.1:7891`
+- 监听 `172.30.x.x:7891`
 - 转发到 Windows 本机代理 `127.0.0.1:7890`
 
 ### 第二步：放行 7891 端口
@@ -123,7 +123,7 @@ netsh interface portproxy show all
 你应该能看到类似：
 
 ```text
-172.30.160.1   7891   127.0.0.1   7890
+172.30.x.x   7891   127.0.0.1   7890
 ```
 
 ### 第四步：重启 WSL
@@ -137,7 +137,7 @@ wsl --shutdown
 进入 WSL 后执行：
 
 ```bash
-curl -I -v --proxy http://172.30.160.1:7891 --max-time 10 https://www.google.com
+curl -I -v --proxy http://172.30.x.x:7891 --max-time 10 https://www.google.com
 ```
 
 如果通了，就说明链路已经建立成功。
@@ -147,8 +147,8 @@ curl -I -v --proxy http://172.30.160.1:7891 --max-time 10 https://www.google.com
 先临时设置：
 
 ```bash
-export http_proxy=http://172.30.160.1:7891
-export https_proxy=http://172.30.160.1:7891
+export http_proxy=http://172.30.x.x:7891
+export https_proxy=http://172.30.x.x:7891
 unset all_proxy
 ```
 
@@ -162,7 +162,7 @@ wget https://www.google.com
 如果代理软件的这个端口确认支持 SOCKS，也可以设置：
 
 ```bash
-export all_proxy=socks5://172.30.160.1:7891
+export all_proxy=socks5://172.30.x.x:7891
 ```
 
 但如果你不确定端口类型，先只配 `http_proxy` 和 `https_proxy` 更稳。
@@ -172,8 +172,8 @@ export all_proxy=socks5://172.30.160.1:7891
 把下面内容加入 `~/.bashrc` 或 `~/.zshrc`：
 
 ```bash
-export http_proxy=http://172.30.160.1:7891
-export https_proxy=http://172.30.160.1:7891
+export http_proxy=http://172.30.x.x:7891
+export https_proxy=http://172.30.x.x:7891
 unset all_proxy
 ```
 
@@ -189,16 +189,16 @@ source ~/.bashrc
 
 ```bash
 sudo tee /etc/apt/apt.conf.d/95proxies >/dev/null <<EOF
-Acquire::http::Proxy "http://172.30.160.1:7891";
-Acquire::https::Proxy "http://172.30.160.1:7891";
+Acquire::http::Proxy "http://172.30.x.x:7891";
+Acquire::https::Proxy "http://172.30.x.x:7891";
 EOF
 ```
 
 ### git
 
 ```bash
-git config --global http.proxy "http://172.30.160.1:7891"
-git config --global https.proxy "http://172.30.160.1:7891"
+git config --global http.proxy "http://172.30.x.x:7891"
+git config --global https.proxy "http://172.30.x.x:7891"
 ```
 
 ## 10. 这种方案有没有安全风险
@@ -218,7 +218,7 @@ git config --global https.proxy "http://172.30.160.1:7891"
 而加了 `portproxy` 之后，实际上又新增了一个入口：
 
 ```text
-172.30.160.1:7891
+172.30.x.x:7891
 ```
 
 这就意味着这个端口不再只是纯本机回环端口。
@@ -228,7 +228,7 @@ git config --global https.proxy "http://172.30.160.1:7891"
 推荐规则里监听的是：
 
 ```text
-172.30.160.1
+172.30.x.x
 ```
 
 而不是：
@@ -239,12 +239,12 @@ git config --global https.proxy "http://172.30.160.1:7891"
 
 这两者差别很大：
 
-- `172.30.160.1` 只绑定在 WSL 虚拟网卡上
+- `172.30.x.x` 只绑定在 WSL 虚拟网卡上
 - `0.0.0.0` 会绑定到所有网卡，风险明显更大
 
 所以更安全的原则是：
 
-- 只监听 `172.30.160.1`
+- 只监听 `172.30.x.x`
 - 不要监听 `0.0.0.0`
 - 不要把同样的做法用于数据库、SSH 代理、管理后台等敏感服务
 
@@ -261,7 +261,7 @@ netsh interface portproxy show all
 ### 删除旧的端口转发规则
 
 ```powershell
-netsh interface portproxy delete v4tov4 listenaddress=172.30.160.1 listenport=7891
+netsh interface portproxy delete v4tov4 listenaddress=172.30.x.x listenport=7891
 ```
 
 ### 删除旧防火墙规则
@@ -275,13 +275,13 @@ netsh advfirewall firewall delete rule name="WSL PortProxy 7891"
 在 **管理员 PowerShell** 中执行：
 
 ```powershell
-New-NetFirewallRule -DisplayName "WSL PortProxy 7891 Restricted" -Direction Inbound -Action Allow -Protocol TCP -LocalPort 7891 -LocalAddress 172.30.160.1
+New-NetFirewallRule -DisplayName "WSL PortProxy 7891 Restricted" -Direction Inbound -Action Allow -Protocol TCP -LocalPort 7891 -LocalAddress 172.30.x.x
 ```
 
 然后重新添加端口转发：
 
 ```powershell
-netsh interface portproxy add v4tov4 listenaddress=172.30.160.1 listenport=7891 connectaddress=127.0.0.1 connectport=7890
+netsh interface portproxy add v4tov4 listenaddress=172.30.x.x listenport=7891 connectaddress=127.0.0.1 connectport=7890
 ```
 
 ## 12. 不用时如何关闭
@@ -291,7 +291,7 @@ netsh interface portproxy add v4tov4 listenaddress=172.30.160.1 listenport=7891 
 ### 删除端口转发
 
 ```powershell
-netsh interface portproxy delete v4tov4 listenaddress=172.30.160.1 listenport=7891
+netsh interface portproxy delete v4tov4 listenaddress=172.30.x.x listenport=7891
 ```
 
 ### 删除防火墙规则
@@ -345,7 +345,7 @@ Start-Service iphlpsvc
 ### 在 WSL 中测试
 
 ```bash
-curl -I -v --proxy http://172.30.160.1:7891 --max-time 10 https://www.google.com
+curl -I -v --proxy http://172.30.x.x:7891 --max-time 10 https://www.google.com
 ```
 
 ## 14. 一句话总结
@@ -353,7 +353,7 @@ curl -I -v --proxy http://172.30.160.1:7891 --max-time 10 https://www.google.com
 在 Win10 的 WSL2 NAT 模式下，如果 WSL 不能直接访问 Windows 本机代理端口，那么最实用的方案就是：
 
 - 保留 Windows 代理继续监听 `127.0.0.1:7890`
-- 用 `portproxy` 单独转发一个 `172.30.160.1:7891`
+- 用 `portproxy` 单独转发一个 `172.30.x.x:7891`
 - WSL 只使用这个新端口
 
 这样既能解决可用性问题，也比直接开放到所有网卡更安全。
