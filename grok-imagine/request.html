@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Grok Imagine Video API - Request Builder</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0d1117;
+      color: #c9d1d9;
+      display: flex;
+      gap: 0;
+      min-height: 100vh;
+    }
+    .panel {
+      flex: 1;
+      padding: 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+    .panel-left {
+      max-width: 540px;
+      border-right: 1px solid #21262d;
+    }
+    .panel-right {
+      background: #0b0f14;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+    }
+    h2 {
+      font-size: 18px;
+      font-weight: 600;
+      color: #f0f6fc;
+      margin-bottom: 4px;
+    }
+    .subtitle {
+      font-size: 13px;
+      color: #8b949e;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    label {
+      font-size: 13px;
+      font-weight: 500;
+      color: #c9d1d9;
+    }
+    label .optional {
+      color: #8b949e;
+      font-weight: 400;
+      font-style: italic;
+    }
+    input, select, textarea {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      padding: 10px 12px;
+      color: #c9d1d9;
+      font-size: 14px;
+      font-family: inherit;
+      transition: border-color 0.15s;
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: #58a6ff;
+      box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.15);
+    }
+    select { cursor: pointer; }
+    textarea { resize: vertical; min-height: 60px; }
+    .hint {
+      font-size: 11px;
+      color: #8b949e;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.15s;
+    }
+    .btn-primary {
+      background: #238636;
+      color: #fff;
+      border-color: #2ea043;
+    }
+    .btn-primary:hover { background: #2ea043; }
+    .btn-secondary {
+      background: #21262d;
+      color: #c9d1d9;
+      border-color: #30363d;
+    }
+    .btn-secondary:hover { background: #30363d; }
+    .btn-row { display: flex; gap: 8px; align-items: center; }
+    .output-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    pre {
+      flex: 1;
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      padding: 20px;
+      font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      overflow: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+      color: #7ee787;
+    }
+    .toast {
+      position: fixed;
+      top: 24px;
+      right: 24px;
+      background: #238636;
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-size: 13px;
+      opacity: 0;
+      transform: translateY(-8px);
+      transition: all 0.25s;
+      pointer-events: none;
+      z-index: 100;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .curl-block {
+      margin-top: 16px;
+    }
+    .curl-block pre {
+      color: #ffa657;
+    }
+    .section-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #8b949e;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: 8px;
+      padding-top: 12px;
+      border-top: 1px solid #21262d;
+    }
+    .ref-item {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .ref-item input { flex: 1; }
+    .btn-sm {
+      padding: 6px 12px;
+      font-size: 12px;
+      border-radius: 4px;
+    }
+    .btn-danger {
+      background: #da3633;
+      color: #fff;
+      border-color: #f85149;
+    }
+    .btn-danger:hover { background: #f85149; }
+  </style>
+</head>
+<body>
+  <div class="panel panel-left">
+    <div>
+      <h2>Grok Imagine Video API</h2>
+      <p class="subtitle">POST /v1/videos/generations — 请求构造器</p>
+    </div>
+
+    <div class="form-group">
+      <label for="model">Model</label>
+      <input id="model" type="text" value="grok-imagine-video" placeholder="grok-imagine-video">
+    </div>
+
+    <div class="form-group">
+      <label for="prompt">Prompt</label>
+      <textarea id="prompt" rows="2" placeholder="描述你想要生成的视频内容..."></textarea>
+      <span class="hint">文本生成视频(T2V)时必填；图片生成视频(I2V)时可选</span>
+    </div>
+
+    <div class="form-group">
+      <label for="aspectRatio">Aspect Ratio</label>
+      <select id="aspectRatio">
+        <option value="">不指定</option>
+        <option value="1:1">1:1</option>
+        <option value="16:9" selected>16:9</option>
+        <option value="9:16">9:16</option>
+        <option value="4:3">4:3</option>
+        <option value="3:4">3:4</option>
+        <option value="3:2">3:2</option>
+        <option value="2:3">2:3</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="duration">Duration <span class="optional">(秒) — <strong id="durationLabel">8</strong></span></label>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span style="font-size:13px;color:#8b949e;">1</span>
+        <input id="duration" type="range" min="1" max="15" value="8" style="flex:1;accent-color:#58a6ff;">
+        <span style="font-size:13px;color:#8b949e;">15</span>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="resolution">Resolution</label>
+      <select id="resolution">
+        <option value="">不指定</option>
+        <option value="480p">480p</option>
+        <option value="720p" selected>720p</option>
+        <option value="1080p">1080p</option>
+      </select>
+    </div>
+
+    <div class="section-title">Image (可选 — I2V 图片转视频)</div>
+
+    <div class="form-group">
+      <label for="imageUrl">Image URL</label>
+      <div style="display:flex;gap:8px;">
+        <input id="imageUrl" type="text" placeholder="https:// 或 data:image/... base64" style="flex:1;">
+        <button class="btn btn-secondary btn-sm" onclick="pickImageFile('imageUrl')">选择本地图片</button>
+      </div>
+      <span class="hint">粘贴 URL 或点击按钮将本地图片转为 base64</span>
+    </div>
+
+    <div class="section-title">Reference Images (可选 — R2V 参考图转视频)</div>
+
+    <div id="refImagesContainer">
+      <!-- dynamic -->
+    </div>
+    <button class="btn btn-secondary btn-sm" onclick="addRefImage()" style="align-self: flex-start;">+ 添加参考图</button>
+
+    <div class="btn-row" style="margin-top: 8px;">
+      <button class="btn btn-primary" onclick="generate()">生成 Request JSON</button>
+      <button class="btn btn-secondary" onclick="resetForm()">重置</button>
+    </div>
+  </div>
+
+  <div class="panel panel-right">
+    <div class="output-header">
+      <h2 style="margin:0">Request JSON</h2>
+      <button class="btn btn-secondary btn-sm" onclick="copyJson()">复制</button>
+    </div>
+    <pre id="jsonOutput">点击左侧「生成 Request JSON」按钮来构建请求</pre>
+    <div class="curl-block">
+      <div class="output-header">
+        <h2 style="margin:0;font-size:15px;">cURL</h2>
+        <button class="btn btn-secondary btn-sm" onclick="copyCurl()">复制</button>
+      </div>
+      <pre id="curlOutput">点击左侧按钮生成</pre>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    let refCount = 0;
+
+    document.getElementById('duration').addEventListener('input', function () {
+      document.getElementById('durationLabel').textContent = this.value;
+    });
+
+    function pickImageFile(targetInputId) {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/jpeg,image/png,image/webp';
+      input.onchange = function () {
+        const file = this.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function () {
+          document.getElementById(targetInputId).value = reader.result;
+          showToast('图片已转为 base64');
+        };
+        reader.readAsDataURL(file);
+      };
+      input.click();
+    }
+
+    function addRefImage() {
+      refCount++;
+      const container = document.getElementById('refImagesContainer');
+      const div = document.createElement('div');
+      div.className = 'ref-item form-group';
+      div.id = 'ref-' + refCount;
+      div.innerHTML = `
+        <input type="text" placeholder="参考图 URL (https:// 或 base64)" class="ref-url" style="flex:1;">
+        <button class="btn btn-secondary btn-sm" onclick="pickImageFile('ref-url-${refCount}')">选择图片</button>
+        <button class="btn btn-danger btn-sm" onclick="document.getElementById('ref-${refCount}').remove()">删除</button>
+      `;
+      div.querySelector('.ref-url').id = 'ref-url-' + refCount;
+      container.appendChild(div);
+    }
+
+    function resetForm() {
+      document.getElementById('model').value = 'grok-imagine-video';
+      document.getElementById('prompt').value = '';
+      document.getElementById('aspectRatio').value = '16:9';
+      document.getElementById('duration').value = '8';
+      document.getElementById('durationLabel').textContent = '8';
+      document.getElementById('resolution').value = '720p';
+      document.getElementById('imageUrl').value = '';
+      document.getElementById('refImagesContainer').innerHTML = '';
+      document.getElementById('jsonOutput').textContent = '点击左侧「生成 Request JSON」按钮来构建请求';
+      document.getElementById('curlOutput').textContent = '点击左侧按钮生成';
+      refCount = 0;
+    }
+
+    function generate() {
+      const body = {};
+
+      body.model = document.getElementById('model').value || 'grok-imagine-video';
+
+      const prompt = document.getElementById('prompt').value.trim();
+      if (prompt) body.prompt = prompt;
+
+      const aspectRatio = document.getElementById('aspectRatio').value;
+      if (aspectRatio) body.aspect_ratio = aspectRatio;
+
+      const durVal = document.getElementById('duration').value;
+      if (durVal !== '') body.duration = parseInt(durVal, 10);
+
+      const resolution = document.getElementById('resolution').value;
+      if (resolution) body.resolution = resolution;
+
+      const imageUrl = document.getElementById('imageUrl').value.trim();
+      if (imageUrl) body.image = { url: imageUrl };
+
+      const refUrls = document.querySelectorAll('[id^="ref-url-"]');
+      if (refUrls.length > 0) {
+        const refs = [];
+        refUrls.forEach(el => {
+          const v = el.value.trim();
+          if (v) refs.push({ url: v });
+        });
+        if (refs.length > 0) body.reference_images = refs;
+      }
+
+      const jsonStr = JSON.stringify(body, null, 2);
+      document.getElementById('jsonOutput').textContent = jsonStr;
+
+      // Build curl
+      const curlPayload = JSON.stringify(body, null, 2)
+        .replace(/\\/g, '\\\\')
+        .replace(/'/g, "'\\''");
+      const curl = `curl -s https://api.x.ai/v1/videos/generations \\\n  -H "Content-Type: application/json" \\\n  -H "Authorization: Bearer $XAI_API_KEY" \\\n  -d '${curlPayload}'`;
+      document.getElementById('curlOutput').textContent = curl;
+    }
+
+    function copyJson() {
+      const text = document.getElementById('jsonOutput').textContent;
+      navigator.clipboard.writeText(text).then(() => showToast('JSON 已复制'));
+    }
+
+    function copyCurl() {
+      const text = document.getElementById('curlOutput').textContent;
+      navigator.clipboard.writeText(text).then(() => showToast('cURL 已复制'));
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2000);
+    }
+
+    // Add one empty ref image row by default
+    addRefImage();
+  </script>
+</body>
+</html>
