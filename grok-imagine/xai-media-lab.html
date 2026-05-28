@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>xAI Media Lab</title>
+<style>
+  :root { --bg: #ffffff; --surface: #f6f8fa; --border: #d0d7de; --text: #1f2328; --muted: #656d76; --accent: #0969da; --accent-hover: #0550ae; --danger: #cf222e; --success: #1a7f37; --warning: #9a6700; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  .container { max-width: 900px; margin: 0 auto; padding: 24px; }
+  h1 { font-size: 22px; margin-bottom: 4px; }
+  .subtitle { color: var(--muted); font-size: 13px; margin-bottom: 24px; }
+  .tabs { display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 1px solid var(--border); }
+  .tab { padding: 10px 20px; cursor: pointer; border: none; background: none; color: var(--muted); font-size: 14px; border-bottom: 2px solid transparent; transition: all .15s; }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab:hover { color: var(--text); }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  .form-group { margin-bottom: 16px; }
+  label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; font-weight: 500; }
+  textarea, input[type="text"], select { width: 100%; padding: 10px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 14px; font-family: inherit; }
+  textarea { resize: vertical; min-height: 80px; }
+  select { cursor: pointer; }
+  textarea:focus, input:focus, select:focus { outline: none; border-color: var(--accent); }
+  .row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .btn { padding: 10px 24px; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all .15s; }
+  .btn-primary { background: #238636; color: #fff; width: 100%; }
+  .btn-primary:hover { background: #2ea043; }
+  .btn-primary:disabled { background: #d0d7de; color: var(--muted); cursor: not-allowed; }
+  .result { margin-top: 20px; }
+  .result img, .result video { max-width: 100%; border-radius: 8px; border: 1px solid var(--border); }
+  .status { margin-top: 12px; padding: 12px; border-radius: 6px; font-size: 13px; display: none; }
+  .status.error { display: block; background: rgba(248,81,73,0.1); border: 1px solid var(--danger); color: var(--danger); }
+  .status.success { display: block; background: rgba(63,185,80,0.1); border: 1px solid var(--success); color: var(--success); }
+  .status.info { display: block; background: rgba(88,166,255,0.1); border: 1px solid var(--accent); color: var(--accent); }
+  .url-box { margin-top: 8px; padding: 8px 12px; background: var(--surface); border-radius: 4px; font-family: monospace; font-size: 12px; word-break: break-all; color: var(--accent); }
+  .api-key-section { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 24px; }
+  .api-key-section .row-2 { align-items: end; }
+  .small { font-size: 11px; color: var(--muted); margin-top: 4px; }
+  .history-img { width: 100px; height: 100px; object-fit: cover; border-radius: 4px; cursor: pointer; border: 2px solid transparent; }
+  .history-img:hover { border-color: var(--accent); }
+  .history { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+  .info-row { display: flex; gap: 12px; align-items: center; margin-top: 8px; font-size: 12px; color: var(--muted); }
+  .info-row span { background: var(--surface); padding: 3px 8px; border-radius: 4px; }
+  /* Log panel */
+  .log-panel { margin-top: 32px; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .log-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: var(--surface); border-bottom: 1px solid var(--border); font-size: 13px; font-weight: 600; }
+  .log-body { max-height: 400px; overflow-y: auto; padding: 10px 14px; background: #fafbfc; font-family: 'SF Mono', 'Cascadia Code', Consolas, monospace; font-size: 12px; line-height: 1.6; }
+  .log-entry { padding: 2px 0; border-bottom: 1px solid #f0f0f0; }
+  .log-entry:last-child { border-bottom: none; }
+  .log-json { white-space: pre; font-family: 'SF Mono', 'Cascadia Code', Consolas, monospace; font-size: 11px; color: var(--text); background: var(--surface); padding: 6px 8px; border-radius: 4px; margin: 4px 0; display: block; line-height: 1.4; }
+  .log-time { color: var(--muted); margin-right: 8px; }
+  .log-req { color: var(--accent); }
+  .log-resp { color: var(--success); }
+  .log-err { color: var(--danger); }
+  .log-info { color: var(--muted); }
+  .log-clear { font-size: 12px; cursor: pointer; color: var(--muted); background: none; border: 1px solid var(--border); border-radius: 4px; padding: 2px 10px; }
+  .log-clear:hover { color: var(--text); }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>xAI Media Lab</h1>
+  <p class="subtitle">直连 xAI API · 零 Token 消耗 · API Key 仅存本地</p>
+
+  <div class="api-key-section">
+    <div class="row-2">
+      <div>
+        <label>XAI_API_KEY</label>
+        <input type="password" id="apiKey" placeholder="xai-..." autocomplete="off">
+        <p class="small">从 <a href="https://console.x.ai/" target="_blank" style="color:var(--accent)">console.x.ai</a> 获取 · 仅保存在浏览器本地</p>
+      </div>
+      <div style="display:flex;align-items:end;gap:8px;">
+        <button class="btn btn-primary" onclick="saveKey()" style="width:auto;padding:10px 18px;">保存</button>
+        <span id="keyStatus" style="font-size:12px;color:var(--muted);"></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('image-gen')">🎨 文生图</button>
+    <button class="tab" onclick="switchTab('image-edit')">✂️ 图编辑</button>
+    <button class="tab" onclick="switchTab('video-gen')">🎬 文生视频</button>
+    <button class="tab" onclick="switchTab('video-edit')">🎞️ 视频编辑</button>
+  </div>
+
+  <!-- IMAGE GENERATION -->
+  <div class="panel active" id="panel-image-gen">
+    <div class="form-group">
+      <label>Prompt</label>
+      <textarea id="ig-prompt" placeholder="A serene lake at sunrise with mist rolling over the water"></textarea>
+    </div>
+    <div class="row">
+      <div class="form-group">
+        <label>Model</label>
+        <select id="ig-model">
+          <option value="grok-imagine-image">grok-imagine-image (快)</option>
+          <option value="grok-imagine-image-quality" selected>grok-imagine-image-quality (高质量)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Aspect Ratio</label>
+        <select id="ig-ar">
+          <option value="auto">auto</option>
+          <option value="1:1" selected>1:1 (正方形)</option>
+          <option value="16:9">16:9 (横屏)</option>
+          <option value="9:16">9:16 (竖屏)</option>
+          <option value="4:3">4:3</option>
+          <option value="3:4">3:4</option>
+          <option value="3:2">3:2</option>
+          <option value="2:3">2:3</option>
+          <option value="2:1">2:1</option>
+          <option value="1:2">1:2</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Resolution</label>
+        <select id="ig-res">
+          <option value="1k" selected>1K</option>
+          <option value="2k">2K</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Response Format</label>
+      <select id="ig-fmt">
+        <option value="url" selected>URL (直接链接)</option>
+        <option value="b64_json">Base64 (存本地缓存)</option>
+      </select>
+    </div>
+    <button class="btn btn-primary" onclick="generateImage()" id="btn-ig">生成图片</button>
+    <div class="status" id="status-ig"></div>
+    <div class="result" id="result-ig"></div>
+  </div>
+
+  <!-- IMAGE EDIT -->
+  <div class="panel" id="panel-image-edit">
+    <div class="form-group">
+      <label>Prompt (编辑指令)</label>
+      <textarea id="ie-prompt" placeholder="Add a crown to this cat"></textarea>
+    </div>
+    <div class="form-group">
+      <label>图片 URL</label>
+      <input type="text" id="ie-url" placeholder="https://example.com/image.jpg">
+    </div>
+    <div class="form-group">
+      <label>多图参考 URL (可选，每行一个)</label>
+      <textarea id="ie-urls" placeholder="https://example.com/ref1.jpg&#10;https://example.com/ref2.jpg" style="min-height:50px;"></textarea>
+      <p class="small">用于多图编辑 — prompt 中用 &lt;IMAGE_0&gt;, &lt;IMAGE_1&gt; 引用</p>
+    </div>
+    <div class="row">
+      <div class="form-group">
+        <label>Model</label>
+        <select id="ie-model">
+          <option value="grok-imagine-image">grok-imagine-image (快)</option>
+          <option value="grok-imagine-image-quality" selected>grok-imagine-image-quality (高质量)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Aspect Ratio</label>
+        <select id="ie-ar">
+          <option value="auto">auto</option>
+          <option value="1:1" selected>1:1</option>
+          <option value="16:9">16:9</option>
+          <option value="9:16">9:16</option>
+          <option value="4:3">4:3</option>
+          <option value="3:4">3:4</option>
+          <option value="3:2">3:2</option>
+          <option value="2:3">2:3</option>
+          <option value="2:1">2:1</option>
+          <option value="1:2">1:2</option>
+          <option value="9:19.5">9:19.5</option>
+          <option value="19.5:9">19.5:9</option>
+          <option value="9:20">9:20</option>
+          <option value="20:9">20:9</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Resolution</label>
+        <select id="ie-res">
+          <option value="1k" selected>1K</option>
+          <option value="2k">2K</option>
+        </select>
+      </div>
+    </div>
+    <div class="row-2">
+      <div class="form-group">
+        <label>数量 (n)</label>
+        <input type="number" id="ie-n" value="1" min="1" max="4">
+      </div>
+      <div class="form-group">
+        <label>Response Format</label>
+        <select id="ie-fmt">
+          <option value="url" selected>URL</option>
+          <option value="b64_json">Base64</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="editImage()" id="btn-ie">编辑图片</button>
+    <div class="status" id="status-ie"></div>
+    <div class="result" id="result-ie"></div>
+  </div>
+
+  <!-- VIDEO GENERATION -->
+  <div class="panel" id="panel-video-gen">
+    <div class="form-group">
+      <label>Prompt</label>
+      <textarea id="vg-prompt" placeholder="A serene lake at sunrise with mist rolling over the water, cinematic"></textarea>
+    </div>
+    <div class="row">
+      <div class="form-group">
+        <label>Aspect Ratio</label>
+        <select id="vg-ar">
+          <option value="16:9" selected>16:9</option>
+          <option value="9:16">9:16</option>
+          <option value="1:1">1:1</option>
+          <option value="4:3">4:3</option>
+          <option value="3:4">3:4</option>
+          <option value="3:2">3:2</option>
+          <option value="2:3">2:3</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Resolution</label>
+        <select id="vg-res">
+          <option value="720p" selected>720p</option>
+          <option value="1080p">1080p</option>
+          <option value="480p">480p</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Duration (秒)</label>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <input type="range" id="vg-dur" value="8" min="1" max="15" style="flex:1;" oninput="document.getElementById('vg-dur-val').textContent=this.value+'s'">
+          <span id="vg-dur-val" style="font-size:13px;min-width:32px;color:var(--text);">8s</span>
+        </div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>参考图片 URL (可选，每行一个，最多7张)</label>
+      <textarea id="vg-refs" placeholder="https://example.com/ref1.jpg&#10;https://example.com/ref2.jpg" style="min-height:50px;"></textarea>
+      <p class="small">用于风格/角色参考 — 不填则纯文生视频</p>
+    </div>
+    <button class="btn btn-primary" onclick="generateVideo()" id="btn-vg">生成视频</button>
+    <div class="status" id="status-vg"></div>
+    <div class="result" id="result-vg"></div>
+  </div>
+
+  <!-- VIDEO EDIT -->
+  <div class="panel" id="panel-video-edit">
+    <div class="form-group">
+      <label>Prompt (编辑指令)</label>
+      <textarea id="ve-prompt" placeholder="Give the woman a silver necklace"></textarea>
+    </div>
+    <div class="form-group">
+      <label>视频 URL (MP4)</label>
+      <input type="text" id="ve-url" placeholder="https://example.com/video.mp4">
+    </div>
+    <button class="btn btn-primary" onclick="editVideo()" id="btn-ve">编辑视频</button>
+    <div class="status" id="status-ve"></div>
+    <div class="result" id="result-ve"></div>
+  </div>
+
+  <!-- Log Panel -->
+  <div class="log-panel">
+    <div class="log-header">
+      <span>📋 日志</span>
+      <button class="log-clear" onclick="clearLog()">清空</button>
+    </div>
+    <div class="log-body" id="logBody"></div>
+  </div>
+</div>
+
+<script>
+const BASE = 'https://api.x.ai/v1';
+const POLL_INTERVAL = 5000;
+const POLL_TIMEOUT = 240000;
+
+// ---- Logging ----
+function log(cls, msg) {
+  const t = new Date().toLocaleTimeString('zh-CN', { hour12: false });
+  const el = document.getElementById('logBody');
+  const div = document.createElement('div');
+  div.className = 'log-entry';
+  const ts = document.createElement('span');
+  ts.className = 'log-time';
+  ts.textContent = t;
+  const ms = document.createElement('span');
+  ms.className = 'log-' + cls;
+  ms.textContent = msg;
+  div.appendChild(ts);
+  div.appendChild(ms);
+  el.appendChild(div);
+  el.scrollTop = el.scrollHeight;
+}
+function clearLog() { document.getElementById('logBody').innerHTML = ''; }
+function trunc(s, n) { return s && s.length > n ? s.slice(0, n) + '...' : s; }
+function escapeHTML(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+function attrEscape(s) { return String(s).replace(/"/g, '&quot;'); }
+function logJSON(cls, label, obj) {
+  const json = JSON.stringify(obj, null, 2);
+  const t = new Date().toLocaleTimeString('zh-CN', { hour12: false });
+  const el = document.getElementById('logBody');
+  const div = document.createElement('div');
+  div.className = 'log-entry';
+  const ts = document.createElement('span');
+  ts.className = 'log-time';
+  ts.textContent = t;
+  const ls = document.createElement('span');
+  ls.className = 'log-' + cls;
+  ls.textContent = label;
+  const pre = document.createElement('pre');
+  pre.className = 'log-json';
+  pre.textContent = json;
+  div.appendChild(ts);
+  div.appendChild(ls);
+  div.appendChild(pre);
+  el.appendChild(div);
+  el.scrollTop = el.scrollHeight;
+}
+
+// ---- API Key ----
+function getKey() { return localStorage.getItem('xai_api_key') || ''; }
+function saveKey() {
+  const k = document.getElementById('apiKey').value.trim();
+  if (!k) return;
+  localStorage.setItem('xai_api_key', k);
+  document.getElementById('keyStatus').textContent = '✅ 已保存';
+  setTimeout(() => document.getElementById('keyStatus').textContent = '', 2000);
+}
+(function() {
+  const k = getKey();
+  if (k) { document.getElementById('apiKey').value = k; document.getElementById('keyStatus').textContent = '✅ 已加载'; }
+})();
+
+function headers() {
+  return {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer ' + getKey(),
+    'User-Agent': 'Hermes-Agent/0.14.0',
+  };
+}
+
+function setStatus(id, type, msg) {
+  const el = document.getElementById(id);
+  el.className = 'status ' + type;
+  el.textContent = msg;
+}
+
+function clearStatus(id) { document.getElementById(id).className = 'status'; }
+
+// ---- Tabs ----
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelector(`[onclick="switchTab('${tab}')"]`).classList.add('active');
+  document.getElementById('panel-' + tab).classList.add('active');
+}
+
+// ---- Image Generation ----
+async function generateImage() {
+  const btn = document.getElementById('btn-ig');
+  const apikey = getKey();
+  if (!apikey) return setStatus('status-ig', 'error', '请先输入 XAI_API_KEY');
+
+  btn.disabled = true;
+  btn.textContent = '生成中...';
+  clearStatus('status-ig');
+  document.getElementById('result-ig').innerHTML = '';
+
+  const payload = {
+    model: document.getElementById('ig-model').value,
+    prompt: document.getElementById('ig-prompt').value,
+    aspect_ratio: document.getElementById('ig-ar').value,
+    resolution: document.getElementById('ig-res').value,
+    response_format: document.getElementById('ig-fmt').value,
+    n: 1,
+  };
+  log('req', `POST /images/generations  model=${payload.model}  ar=${payload.aspect_ratio}  res=${payload.resolution}  prompt="${trunc(payload.prompt, 60)}"`);
+
+  try {
+    const t0 = performance.now();
+    const res = await fetch(BASE + '/images/generations', {
+      method: 'POST', headers: headers(),
+      body: JSON.stringify(payload),
+    });
+    const ms = (performance.now() - t0).toFixed(0);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      const msg = err.error?.message || err.error || `HTTP ${res.status}`;
+      log('err', `${res.status} (${ms}ms) — ${msg}`);
+      throw new Error(msg);
+    }
+    log('resp', `${res.status} (${ms}ms)`);
+    const data = await res.json();
+    logJSON('info', 'Response:', data);
+    const img = data.data?.[0];
+    if (!img) throw new Error('API 未返回图片数据');
+
+    const imgUrl = img.url || (img.b64_json ? 'data:image/jpeg;base64,' + img.b64_json : null);
+    if (!imgUrl) throw new Error('响应中无 URL 或 b64_json');
+
+    setStatus('status-ig', 'success', '生成成功');
+    document.getElementById('result-ig').innerHTML = `
+      <img src="${attrEscape(imgUrl)}" alt="generated" style="max-width:100%;border-radius:8px;">
+      <div class="info-row"><span>${escapeHTML(data.data[0].mime_type || 'image/jpeg')}</span></div>
+      <div class="url-box">${escapeHTML(imgUrl)}</div>`;
+  } catch(e) {
+    setStatus('status-ig', 'error', '生成失败: ' + e.message);
+  }
+  btn.disabled = false;
+  btn.textContent = '生成图片';
+}
+
+// ---- Image Edit ----
+async function editImage() {
+  const btn = document.getElementById('btn-ie');
+  if (!getKey()) return setStatus('status-ie', 'error', '请先输入 XAI_API_KEY');
+
+  btn.disabled = true;
+  btn.textContent = '编辑中...';
+  clearStatus('status-ie');
+  document.getElementById('result-ie').innerHTML = '';
+
+  const prompt = document.getElementById('ie-prompt').value;
+  const imgUrl = document.getElementById('ie-url').value;
+  const model = document.getElementById('ie-model').value;
+  const ar = document.getElementById('ie-ar').value;
+  const res = document.getElementById('ie-res').value;
+  const fmt = document.getElementById('ie-fmt').value;
+  const n = parseInt(document.getElementById('ie-n').value) || 1;
+  const urlsRaw = document.getElementById('ie-urls').value.trim();
+  const urls = urlsRaw ? urlsRaw.split('\n').map(s => s.trim()).filter(Boolean) : [];
+
+  const payload = {
+    model,
+    prompt,
+    aspect_ratio: ar,
+    resolution: res,
+    response_format: fmt,
+    n,
+  };
+  if (urls.length > 1) {
+    payload.images = urls.map(u => ({ url: u }));
+  } else if (urls.length === 1) {
+    payload.image = { url: urls[0] };
+  } else {
+    payload.image = { url: imgUrl };
+  }
+
+  log('req', `POST /images/edits  model=${model}  ar=${ar}  res=${res}  n=${n}  fmt=${fmt}  image=${trunc(imgUrl, 40)}  prompt="${trunc(prompt, 60)}"`);
+
+  try {
+    const t0 = performance.now();
+    const res = await fetch(BASE + '/images/edits', { method: 'POST', headers: headers(), body: JSON.stringify(payload) });
+    const ms = (performance.now() - t0).toFixed(0);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      const msg = err.error?.message || err.error || `HTTP ${res.status}`;
+      log('err', `${res.status} (${ms}ms) — ${msg}`);
+      throw new Error(msg);
+    }
+    log('resp', `${res.status} (${ms}ms)`);
+    const data = await res.json();
+    logJSON('info', 'Response:', data);
+    const img = data.data?.[0];
+    if (!img?.url) throw new Error('API 未返回图片');
+    setStatus('status-ie', 'success', '编辑成功');
+    document.getElementById('result-ie').innerHTML = `
+      <img src="${attrEscape(img.url)}" alt="edited" style="max-width:100%;border-radius:8px;">
+      <div class="url-box">${escapeHTML(img.url)}</div>`;
+  } catch(e) {
+    setStatus('status-ie', 'error', '编辑失败: ' + e.message);
+  }
+  btn.disabled = false;
+  btn.textContent = '编辑图片';
+}
+
+// ---- Video Generation ----
+async function generateVideo() {
+  const btn = document.getElementById('btn-vg');
+  if (!getKey()) return setStatus('status-vg', 'error', '请先输入 XAI_API_KEY');
+  btn.disabled = true;
+  clearStatus('status-vg');
+  document.getElementById('result-vg').innerHTML = '';
+
+  try {
+    const payload = {
+      model: 'grok-imagine-video',
+      prompt: document.getElementById('vg-prompt').value,
+      aspect_ratio: document.getElementById('vg-ar').value,
+      resolution: document.getElementById('vg-res').value,
+      duration: parseInt(document.getElementById('vg-dur').value) || 8,
+    };
+    const refUrl = document.getElementById('vg-refs').value.trim();
+    if (refUrl) {
+      const refs = refUrl.split('\n').map(s => s.trim()).filter(Boolean).slice(0, 7);
+      if (refs.length === 1) payload.image = { url: refs[0] };
+      else if (refs.length > 1) payload.reference_images = refs.map(u => ({ url: u }));
+    }
+
+    log('req', `POST /videos/generations  model=${payload.model}  ar=${payload.aspect_ratio}  res=${payload.resolution}  dur=${payload.duration}s  prompt="${trunc(payload.prompt, 60)}"`);
+    const t0 = performance.now();
+    const res = await fetch(BASE + '/videos/generations', { method: 'POST', headers: headers(), body: JSON.stringify(payload) });
+    const ms = (performance.now() - t0).toFixed(0);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      const msg = err.error?.message || err.error || `HTTP ${res.status}`;
+      log('err', `${res.status} (${ms}ms) — ${msg}`);
+      throw new Error(msg);
+    }
+    const { request_id } = await res.json();
+    if (!request_id) throw new Error('未收到 request_id');
+    log('resp', `202 (${ms}ms) — request_id=${request_id}\n{"request_id": "${request_id}"}`);
+    // -- image gen continues
+    setStatus('status-vg', 'info', `已提交 (${request_id})，正在等待完成...`);
+    btn.textContent = '等待中...';
+
+    // Poll
+    const start = Date.now();
+    while (Date.now() - start < POLL_TIMEOUT) {
+      await new Promise(r => setTimeout(r, POLL_INTERVAL));
+      const pr = await fetch(`${BASE}/videos/${request_id}`, { headers: headers() });
+      if (!pr.ok) continue;
+      const pb = await pr.json();
+      if (pb.status === 'done' && pb.video?.url) {
+        log('resp', `GET /videos/${request_id} → done  dur=${pb.video.duration || '?'}s  url=${trunc(pb.video.url, 60)}`);
+        logJSON('info', 'Poll result:', pb);
+        setStatus('status-vg', 'success', `完成 (${pb.video.duration || '?'}s)`);
+        document.getElementById('result-vg').innerHTML = `
+          <video controls src="${attrEscape(pb.video.url)}" style="max-width:100%;border-radius:8px;"></video>
+          <div class="info-row"><span>${escapeHTML(pb.model || 'grok-imagine-video')}</span><span>${pb.video.duration || '?'}s</span></div>
+          <div class="url-box">${escapeHTML(pb.video.url)}</div>`;
+        break;
+      }
+      if (pb.status === 'failed') {
+        log('err', `GET /videos/${request_id} → failed: ${pb.error?.message || '未知错误'}`);
+        setStatus('status-vg', 'error', '生成失败: ' + (pb.error?.message || '未知错误'));
+        break;
+      }
+      const pct = pb.progress || 0;
+      setStatus('status-vg', 'info', `生成中... ${pct}%`);
+    }
+    if (Date.now() - start >= POLL_TIMEOUT) {
+      log('err', `GET /videos/${request_id} → TIMEOUT (${POLL_TIMEOUT/1000}s)`);
+      setStatus('status-vg', 'error', '超时 (240s)，请稍后查看');
+    }
+  } catch(e) {
+    setStatus('status-vg', 'error', '失败: ' + e.message);
+  }
+  btn.disabled = false;
+  btn.textContent = '生成视频';
+}
+
+// ---- Video Edit ----
+async function editVideo() {
+  const btn = document.getElementById('btn-ve');
+  if (!getKey()) return setStatus('status-ve', 'error', '请先输入 XAI_API_KEY');
+  btn.disabled = true;
+  clearStatus('status-ve');
+  document.getElementById('result-ve').innerHTML = '';
+
+  try {
+    const payload = {
+      model: 'grok-imagine-video',
+      prompt: document.getElementById('ve-prompt').value,
+      video: { url: document.getElementById('ve-url').value },
+    };
+    const vUrl = document.getElementById('ve-url').value;
+    log('req', `POST /videos/edits  model=${payload.model}  video=${trunc(vUrl, 50)}  prompt="${trunc(payload.prompt, 60)}"`);
+    const t0 = performance.now();
+    const res = await fetch(BASE + '/videos/edits', { method: 'POST', headers: headers(), body: JSON.stringify(payload) });
+    const ms = (performance.now() - t0).toFixed(0);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      const msg = err.error?.message || err.error || `HTTP ${res.status}`;
+      log('err', `${res.status} (${ms}ms) — ${msg}`);
+      throw new Error(msg);
+    }
+    const { request_id } = await res.json();
+    if (!request_id) throw new Error('未收到 request_id');
+    log('resp', `202 (${ms}ms) — request_id=${request_id}`);
+
+    setStatus('status-ve', 'info', `已提交 (${request_id})，正在等待完成...`);
+    btn.textContent = '等待中...';
+
+    const start = Date.now();
+    while (Date.now() - start < POLL_TIMEOUT) {
+      await new Promise(r => setTimeout(r, POLL_INTERVAL));
+      const pr = await fetch(`${BASE}/videos/${request_id}`, { headers: headers() });
+      if (!pr.ok) continue;
+      const pb = await pr.json();
+      if (pb.status === 'done' && pb.video?.url) {
+        log('resp', `GET /videos/${request_id} → done  dur=${pb.video.duration || '?'}s`);
+        logJSON('info', 'Poll result:', pb);
+        setStatus('status-ve', 'success', '编辑完成');
+        document.getElementById('result-ve').innerHTML = `
+          <video controls src="${attrEscape(pb.video.url)}" style="max-width:100%;border-radius:8px;"></video>
+          <div class="info-row"><span>${escapeHTML(pb.model || 'grok-imagine-video')}</span><span>${pb.video.duration || '?'}s</span></div>
+          <div class="url-box">${escapeHTML(pb.video.url)}</div>`;
+        break;
+      }
+      if (pb.status === 'failed') {
+        log('err', `GET /videos/${request_id} → failed`);
+        setStatus('status-ve', 'error', '编辑失败: ' + (pb.error?.message || '未知错误'));
+        break;
+      }
+      setStatus('status-ve', 'info', `处理中... ${pb.progress || 0}%`);
+    }
+    if (Date.now() - start >= POLL_TIMEOUT) {
+      log('err', `GET /videos/${request_id} → TIMEOUT`);
+      setStatus('status-ve', 'error', '超时 (240s)');
+    }
+  } catch(e) {
+    setStatus('status-ve', 'error', '失败: ' + e.message);
+  }
+  btn.disabled = false;
+  btn.textContent = '编辑视频';
+}
+</script>
+</body>
+</html>
