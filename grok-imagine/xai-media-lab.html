@@ -379,6 +379,7 @@ async function generateImage() {
     n: 1,
   };
   log('req', `POST /images/generations  model=${payload.model}  ar=${payload.aspect_ratio}  res=${payload.resolution}  prompt="${trunc(payload.prompt, 60)}"`);
+  logJSON('info', 'Request:', payload);
 
   try {
     const t0 = performance.now();
@@ -451,6 +452,7 @@ async function editImage() {
   }
 
   log('req', `POST /images/edits  model=${model}  ar=${ar}  res=${res}  n=${n}  fmt=${fmt}  image=${trunc(imgUrl, 40)}  prompt="${trunc(prompt, 60)}"`);
+  logJSON('info', 'Request:', payload);
 
   try {
     const t0 = performance.now();
@@ -502,6 +504,7 @@ async function generateVideo() {
     }
 
     log('req', `POST /videos/generations  model=${payload.model}  ar=${payload.aspect_ratio}  res=${payload.resolution}  dur=${payload.duration}s  prompt="${trunc(payload.prompt, 60)}"`);
+    logJSON('info', 'Request:', payload);
     const t0 = performance.now();
     const res = await fetch(BASE + '/videos/generations', { method: 'POST', headers: headers(), body: JSON.stringify(payload) });
     const ms = (performance.now() - t0).toFixed(0);
@@ -570,6 +573,7 @@ async function editVideo() {
     };
     const vUrl = document.getElementById('ve-url').value;
     log('req', `POST /videos/edits  model=${payload.model}  video=${trunc(vUrl, 50)}  prompt="${trunc(payload.prompt, 60)}"`);
+    logJSON('info', 'Request:', payload);
     const t0 = performance.now();
     const res = await fetch(BASE + '/videos/edits', { method: 'POST', headers: headers(), body: JSON.stringify(payload) });
     const ms = (performance.now() - t0).toFixed(0);
