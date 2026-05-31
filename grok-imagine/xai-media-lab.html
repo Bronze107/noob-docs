@@ -271,6 +271,18 @@
     </div>
     <div class="log-body" id="logBody"></div>
   </div>
+
+  <!-- Request ID Fetcher -->
+  <div class="log-panel" style="margin-top:16px;">
+    <div class="log-header">
+      <span>🔍 手动查询视频结果</span>
+    </div>
+    <div style="padding:12px 14px;display:flex;gap:8px;align-items:center;">
+      <input type="text" id="fetch-rid" placeholder="request_id (如 a3d1008e-4544-...)" style="flex:1;">
+      <button class="btn btn-primary" onclick="fetchVideoResult()" id="btn-fetch" style="width:auto;padding:8px 16px;">查询</button>
+    </div>
+    <div id="fetch-result" style="padding:0 14px 12px;"></div>
+  </div>
 </div>
 
 <script>
@@ -622,6 +634,51 @@ async function editVideo() {
   }
   btn.disabled = false;
   btn.textContent = '编辑视频';
+}
+
+// ---- Manual Video Result Fetcher ----
+async function fetchVideoResult() {
+  const btn = document.getElementById('btn-fetch');
+  const rid = document.getElementById('fetch-rid').value.trim();
+  const el = document.getElementById('fetch-result');
+  if (!getKey()) { el.innerHTML = '<div class="status error">请先输入 XAI_API_KEY</div>'; return; }
+  if (!rid) { el.innerHTML = '<div class="status error">请输入 request_id</div>'; return; }
+  btn.disabled = true;
+  btn.textContent = '查询中...';
+  el.innerHTML = '';
+  log('req', `GET /videos/${rid} (manual)`);
+  try {
+    const t0 = performance.now();
+    const pr = await fetch(`${BASE}/videos/${rid}`, { headers: headers() });
+    const ms = (performance.now() - t0).toFixed(0);
+    if (!pr.ok) {
+      const err = await pr.json().catch(() => ({}));
+      const msg = err.error?.message || err.error || `HTTP ${pr.status}`;
+      log('err', `${pr.status} (${ms}ms) — ${msg}`);
+      el.innerHTML = `<div class="status error">${msg}</div>`;
+      btn.disabled = false;
+      btn.textContent = '查询';
+      return;
+    }
+    const pb = await pr.json();
+    log('resp', `GET /videos/${rid} → ${pb.status} (${ms}ms)`);
+    logJSON('info', 'Result:', pb);
+    if (pb.status === 'done' && pb.video?.url) {
+      el.innerHTML = `<div class="status success">✅ 完成 (${pb.video.duration || '?'}s)</div>
+        <video controls src="${attrEscape(pb.video.url)}" style="max-width:100%;border-radius:8px;margin-top:8px;"></video>
+        <div class="info-row"><span>${escapeHTML(pb.model || '?')}</span><span>${pb.video.duration || '?'}s</span></div>
+        <div class="url-box">${escapeHTML(pb.video.url)}</div>`;
+    } else if (pb.status === 'failed') {
+      el.innerHTML = `<div class="status error">❌ 失败: ${escapeHTML(pb.error?.message || '未知错误')}</div>`;
+    } else {
+      el.innerHTML = `<div class="status info">⏳ 状态: ${pb.status} (${pb.progress || 0}%)</div>`;
+    }
+  } catch(e) {
+    log('err', `GET /videos/${rid} (manual) — ${e.message}`);
+    el.innerHTML = `<div class="status error">${e.message}</div>`;
+  }
+  btn.disabled = false;
+  btn.textContent = '查询';
 }
 </script>
 </body>
